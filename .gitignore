@@ -1,4 +1,45 @@
-ven/
-__pycache__/
+app/config.py
+ven/*
+
+# Ignore the specific credential file
+strapi-385510-04a56795d885.json
+
+# Ignore all JSON files in the directory (if needed)
+*.json
+
+# Ignore environment files (e.g., .env)
+.env
+.env.local
+.env.development
+.env.production
+
+# Ignore IDE-specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore dependency directories
+node_modules/
+vendor/
+dist/
+build/
+
+# Ignore log files
+*.log
+logs/
+
+# Ignore temporary files
+*.tmp
+*.temp
+
+# Ignore compiled files
+*.class
+*.exe
+*.dll
+*.so
 *.pyc
-*.pyo
