@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  CLOUD_SQL_USERNAME: "clouddb"
+  CLOUD_SQL_PASSWORD: "clouddb"
+  CLOUD_SQL_DATABASE_NAME: "clouddb"
+  CLOUD_SQL_PUBLIC_IP: "35.234.93.133"
+  CLOUD_SQL_PORT: "3306"
+  SQLALCHEMY_DATABASE_URI: "mysql+pymysql://clouddb:clouddb@35.234.93.133:3306/clouddb"

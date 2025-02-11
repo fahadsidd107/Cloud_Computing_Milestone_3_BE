@@ -1,0 +1,19 @@
+version: '3'
+services:
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      CLOUD_SQL_USERNAME: clouddb
+      CLOUD_SQL_PASSWORD: clouddb
+      CLOUD_SQL_DATABASE_NAME: clouddb
+      CLOUD_SQL_PUBLIC_IP: 35.234.93.133  # External IP of your MySQL database
+      CLOUD_SQL_PORT: 3306
+      SQLALCHEMY_DATABASE_URI: "mysql+pymysql://clouddb:clouddb@35.234.93.133:3306/clouddb"  # Use the public IP for MySQL connection
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge

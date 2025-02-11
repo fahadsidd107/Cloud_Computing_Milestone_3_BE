@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from flask_cors import CORS
+from sqlalchemy import text
 
 # Load environment variables from .env file
 load_dotenv()
@@ -7,6 +8,7 @@ load_dotenv()
 from app import create_app
 
 app = create_app()
+
 
 # Enable CORS for all routes with specific configurations
 CORS(
@@ -26,5 +28,5 @@ if __name__ == '__main__':
 
 with app.app_context():
     from app import db
-    db.session.execute('SELECT 1')  # Test DB connection
+    db.session.execute(text('SELECT 1'))  # Test DB connection
     print("Database connection successful!")

@@ -43,6 +43,10 @@ def validate_required_fields(data, required_fields):
     if missing_fields:
         raise ValueError(f"Missing required fields: {', '.join(missing_fields)}")
 
+@bp.route('/')
+def home():
+    return "Hello, World!"
+
 # Product APIs (unchanged)
 @bp.route('/products', methods=['GET'])
 @handle_errors
