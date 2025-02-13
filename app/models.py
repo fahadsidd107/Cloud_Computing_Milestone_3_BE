@@ -1,3 +1,4 @@
+from datetime import datetime
 from . import db
 
 # Association table for Order and Product (many-to-many relationship)
@@ -15,6 +16,8 @@ class Product(db.Model):
     price = db.Column(db.Float, nullable=False)
     stock_count = db.Column(db.Integer, nullable=False)
     image_url = db.Column(db.String(255), nullable=True)
+    category = db.Column(db.String(100), nullable=False, default="Uncategorized")  # New category field
+    date_added = db.Column(db.DateTime, default=datetime.utcnow)  # New date added field
 
     def __repr__(self):
         return f"<Product {self.name}>"
@@ -24,6 +27,7 @@ class Order(db.Model):
     status = db.Column(db.String(50), nullable=False, default='Pending')  # Default status is 'Pending'
     paid = db.Column(db.String(50), nullable=False, default='Unpaid')  # Default is 'Unpaid'
     payment_method = db.Column(db.String(50), nullable=False)  # Payment method: 'PayOnline' or 'CashOnDelivery'
+    date_added = db.Column(db.DateTime, default=datetime.utcnow)  # New date added field
 
     # Many-to-many relationship with Product
     products = db.relationship('Product', secondary=order_product, backref='orders')
