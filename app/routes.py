@@ -5,6 +5,7 @@ from google.cloud import storage
 import os
 import logging
 from functools import wraps
+from datetime import datetime
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -58,6 +59,8 @@ def get_all_products():
         'description': p.description,
         'price': p.price,
         'stock_count': p.stock_count,
+        'category': p.category,
+        'date_added': p.date_added.strftime('%Y-%m-%d %H:%M:%S'),
         'image_url': p.image_url
     } for p in products])
 
@@ -71,7 +74,9 @@ def get_one_product(product_id):
         'description': product.description,
         'price': product.price,
         'stock_count': product.stock_count,
-        'image_url': product.image_url
+        'image_url': product.image_url,
+        'category': product.category,
+        'date_added': product.date_added.strftime('%Y-%m-%d %H:%M:%S')
     })
 
 @bp.route('/products', methods=['POST'])
@@ -81,7 +86,7 @@ def create_product():
     image_file = request.files.get('image')
 
     # Validate required fields
-    required_fields = ['name', 'description', 'price', 'stock_count']
+    required_fields = ['name', 'description', 'price', 'stock_count', 'category']
     validate_required_fields(data, required_fields)
 
     # Ensure stock_count is greater than 0
@@ -95,7 +100,9 @@ def create_product():
         description=data['description'],
         price=float(data['price']),
         stock_count=stock_count,
-        image_url=None
+        image_url=None,
+        category=data['category'],
+        date_added=datetime.utcnow()
     )
     db.session.add(product)
     db.session.commit()
@@ -139,6 +146,8 @@ def update_product(product_id):
     product.description = data.get('description', product.description)
     product.price = float(data.get('price', product.price))
     product.stock_count = int(data.get('stock_count', product.stock_count))
+    product.category = data.get('category', product.category)
+    product.date_added = datetime.utcnow()  # Update date added
     db.session.commit()
     logger.info(f"Product updated successfully: {product.id}")
     return jsonify({'message': 'Product updated', 'id': product.id})
@@ -174,7 +183,9 @@ def get_all_orders():
                 'price': product.price,
                 'stock_count': product.stock_count,
                 'image_url': product.image_url,
-                'quantity': op.quantity
+                'quantity': op.quantity,
+                'category': product.category,
+                'date_added': product.date_added.strftime('%Y-%m-%d %H:%M:%S'),
             })
 
         orders_data.append({
@@ -182,6 +193,7 @@ def get_all_orders():
             'status': order.status,
             'paid': order.paid,
             'payment_method': order.payment_method,
+            'date_added': order.date_added.strftime('%Y-%m-%d %H:%M:%S'),
             'products': products
         })
 
@@ -207,7 +219,9 @@ def get_one_order(order_id):
             'price': product.price,
             'stock_count': product.stock_count,
             'image_url': product.image_url,
-            'quantity': op.quantity
+            'quantity': op.quantity,
+            'category': product.category,
+            'date_added': product.date_added.strftime('%Y-%m-%d %H:%M:%S'),
         })
 
     return jsonify({
@@ -253,7 +267,8 @@ def create_order():
     order = Order(
         status='Pending',  # Default status
         paid='Unpaid',  # Default paid status
-        payment_method=payment_method
+        payment_method=payment_method,
+        date_added=datetime.utcnow()
     )
     db.session.add(order)
     db.session.commit()
