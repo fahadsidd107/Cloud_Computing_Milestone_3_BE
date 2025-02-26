@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from flask_cors import CORS
 from sqlalchemy import text
+from flask_mail import Mail
 
 # Load environment variables from .env file
 load_dotenv()
@@ -8,7 +9,7 @@ load_dotenv()
 from app import create_app
 
 app = create_app()
-
+mail = Mail(app)
 
 # Enable CORS for all routes with specific configurations
 CORS(

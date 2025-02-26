@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Flask, Blueprint, request, jsonify
 from .models import Product, Order, db, order_product
 from .utils import upload_image_to_gcs
 from google.cloud import storage
@@ -6,6 +6,12 @@ import os
 import logging
 from functools import wraps
 from datetime import datetime
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+# Import configuration from config.py
+from .config import MAIL_SERVER, MAIL_PORT, MAIL_USE_TLS, MAIL_USE_SSL, MAIL_USERNAME, MAIL_PASSWORD, MAIL_DEFAULT_SENDER, ADMIN_EMAIL
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -24,6 +30,13 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize GCS client: {str(e)}")
     raise
+
+# Initialize Flask
+app = Flask(__name__)
+app.config.from_object('app.config')
+
+# Admin email for out-of-stock notifications
+ADMIN_EMAIL = 'fsiddiqui107@gmail.com'
 
 bp = Blueprint('api', __name__)
 
@@ -44,9 +57,59 @@ def validate_required_fields(data, required_fields):
     if missing_fields:
         raise ValueError(f"Missing required fields: {', '.join(missing_fields)}")
 
+# Helper function to send emails using smtplib
+def send_email(to, subject, body):
+    try:
+        # Create the email
+        msg = MIMEMultipart()
+        msg['From'] = MAIL_DEFAULT_SENDER
+        msg['To'] = to
+        msg['Subject'] = subject
+
+        # Attach the body to the email
+        msg.attach(MIMEText(body, 'plain'))
+
+        # Log SMTP server details
+        logger.info(f"Connecting to SMTP server: {MAIL_SERVER}:{MAIL_PORT}")
+        logger.info(f"Using SSL: {MAIL_USE_SSL}, Using TLS: {MAIL_USE_TLS}")
+
+        # Connect to the SMTP server
+        if MAIL_USE_SSL:
+            # Use SMTP_SSL for SSL connections
+            with smtplib.SMTP_SSL(MAIL_SERVER, MAIL_PORT) as server:
+                logger.info("Connected to SMTP server using SSL")
+                logger.info("Logging in to SMTP server...")
+                server.login(MAIL_USERNAME, MAIL_PASSWORD)
+                logger.info("Logged in successfully")
+                logger.info(f"Sending email to {to}...")
+                server.sendmail(MAIL_DEFAULT_SENDER, to, msg.as_string())
+                logger.info("Email sent successfully")
+        else:
+            # Use SMTP for TLS connections
+            with smtplib.SMTP(MAIL_SERVER, MAIL_PORT) as server:
+                logger.info("Connected to SMTP server")
+                if MAIL_USE_TLS:
+                    logger.info("Starting TLS...")
+                    server.starttls()
+                    logger.info("TLS started")
+                logger.info("Logging in to SMTP server...")
+                server.login(MAIL_USERNAME, MAIL_PASSWORD)
+                logger.info("Logged in successfully")
+                logger.info(f"Sending email to {to}...")
+                server.sendmail(MAIL_DEFAULT_SENDER, to, msg.as_string())
+                logger.info("Email sent successfully")
+
+        return jsonify({"message": "Email sent successfully"}), 200
+    except smtplib.SMTPException as e:
+        logger.error(f"SMTP error: {str(e)}")
+        return jsonify({'error': f"Failed to send email: {str(e)}"}), 500
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+        return jsonify({'error': f"Failed to send email: {str(e)}"}), 500
+
 @bp.route('/')
 def home():
-    return "Hello, World!"
+    return send_email("fsiddiqui10121998@gmail.com", "TEST", "Nauman")  # Calling the test_email function
 
 # Product APIs (unchanged)
 @bp.route('/products', methods=['GET'])
@@ -194,6 +257,15 @@ def get_all_orders():
             'paid': order.paid,
             'payment_method': order.payment_method,
             'date_added': order.date_added.strftime('%Y-%m-%d %H:%M:%S'),
+            'first_name': order.first_name,
+            'last_name': order.last_name,
+            'email': order.email,
+            'address': order.address,
+            'city': order.city,
+            'country': order.country,
+            'pincode': order.pincode,
+            'phone': order.phone,
+            'address_type': order.address_type,
             'products': products
         })
 
@@ -229,6 +301,15 @@ def get_one_order(order_id):
         'status': order.status,
         'paid': order.paid,
         'payment_method': order.payment_method,
+        'first_name': order.first_name,
+        'last_name': order.last_name,
+        'email': order.email,
+        'address': order.address,
+        'city': order.city,
+        'country': order.country,
+        'pincode': order.pincode,
+        'phone': order.phone,
+        'address_type': order.address_type,
         'products': products
     })
 
@@ -236,7 +317,10 @@ def get_one_order(order_id):
 @handle_errors
 def create_order():
     data = request.json
-    required_fields = ['products', 'payment_method']
+    required_fields = [
+        'products', 'payment_method', 'first_name', 'last_name', 'email',
+        'address', 'city', 'country', 'pincode', 'phone', 'address_type'
+    ]
     validate_required_fields(data, required_fields)
 
     # Validate payment method
@@ -250,6 +334,7 @@ def create_order():
         return jsonify({'error': 'Products must be a non-empty list'}), 400
 
     # Check stock for each product
+    out_of_stock_products = []
     for item in products_data:
         product_id = item.get('product_id')
         quantity = item.get('quantity')
@@ -261,19 +346,37 @@ def create_order():
             return jsonify({'error': f'Product with ID {product_id} not found'}), 404
 
         if quantity > product.stock_count:
-            return jsonify({'error': f'Product {product.name} is out of stock'}), 400
+            out_of_stock_products.append(product.name)
+
+    if out_of_stock_products:
+        # Notify admin about out-of-stock products
+        subject = "Out of Stock Products"
+        body = f"The following products are out of stock: {', '.join(out_of_stock_products)}"
+        send_email(ADMIN_EMAIL, subject, body)
+        return jsonify({'error': f'Products out of stock: {", ".join(out_of_stock_products)}'}), 400
 
     # Create order
     order = Order(
         status='Pending',  # Default status
         paid='Unpaid',  # Default paid status
         payment_method=payment_method,
+        first_name=data['first_name'],
+        last_name=data['last_name'],
+        email=data['email'],
+        address=data['address'],
+        city=data['city'],
+        country=data['country'],
+        pincode=data['pincode'],
+        phone=data['phone'],
+        address_type=data['address_type'],
         date_added=datetime.utcnow()
     )
     db.session.add(order)
     db.session.commit()
 
     # Add products to the order and deduct stock
+    total_cost = 0
+    out_of_stock_notifications = []  # Track products that go out of stock
     for item in products_data:
         product_id = item['product_id']
         quantity = item['quantity']
@@ -287,9 +390,33 @@ def create_order():
         # Deduct stock
         product.stock_count -= quantity
 
+        # Check if stock has reached 0
+        if product.stock_count == 0:
+            out_of_stock_notifications.append(product.name)
+
+        # Calculate total cost
+        total_cost += product.price * quantity
+
     db.session.commit()
+
+    # Notify admin if any product is out of stock
+    if out_of_stock_notifications:
+        subject = "Out of Stock Alert"
+        body = f"The following products are now out of stock: {', '.join(out_of_stock_notifications)}"
+        send_email(ADMIN_EMAIL, subject, body)
+
+    # Send order confirmation email to the user
+    user_email = order.email
+    subject = "Order Confirmation"
+    body = f"Thank you for your order!\n\nOrder ID: {order.id}\nTotal Cost: €{total_cost:.2f}\n\nProducts:\n"
+    for item in products_data:
+        product = Product.query.get(item['product_id'])
+        body += f"- {product.name} (Quantity: {item['quantity']}, Price: €{product.price:.2f})\n"
+
+    send_email(user_email, subject, body)
+
     logger.info(f"Order created successfully: {order.id}")
-    return jsonify({'message': 'Order created', 'id': order.id}), 201
+    return jsonify({'message': 'Order created', 'id': order.id, 'total_cost': total_cost}), 201
 
 @bp.route('/orders/<int:order_id>', methods=['PUT'])
 @handle_errors

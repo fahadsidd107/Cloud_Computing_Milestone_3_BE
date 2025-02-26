@@ -1,8 +1,8 @@
-"""Initial migration
+"""Added category and date_added fields
 
-Revision ID: 18059dc47c14
+Revision ID: 3101135a7f48
 Revises: 
-Create Date: 2025-02-08 18:01:49.538874
+Create Date: 2025-02-21 17:11:04.999128
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '18059dc47c14'
+revision = '3101135a7f48'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -23,6 +23,16 @@ def upgrade():
     sa.Column('status', sa.String(length=50), nullable=False),
     sa.Column('paid', sa.String(length=50), nullable=False),
     sa.Column('payment_method', sa.String(length=50), nullable=False),
+    sa.Column('date_added', sa.DateTime(), nullable=True),
+    sa.Column('first_name', sa.String(length=100), nullable=False),
+    sa.Column('last_name', sa.String(length=100), nullable=False),
+    sa.Column('email', sa.String(length=100), nullable=False),
+    sa.Column('address', sa.String(length=255), nullable=False),
+    sa.Column('city', sa.String(length=100), nullable=False),
+    sa.Column('country', sa.String(length=100), nullable=False),
+    sa.Column('pincode', sa.String(length=20), nullable=False),
+    sa.Column('phone', sa.String(length=20), nullable=False),
+    sa.Column('address_type', sa.String(length=50), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('product',
@@ -32,6 +42,8 @@ def upgrade():
     sa.Column('price', sa.Float(), nullable=False),
     sa.Column('stock_count', sa.Integer(), nullable=False),
     sa.Column('image_url', sa.String(length=255), nullable=True),
+    sa.Column('category', sa.String(length=100), nullable=False),
+    sa.Column('date_added', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('order_product',

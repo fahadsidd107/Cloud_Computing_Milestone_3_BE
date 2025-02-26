@@ -24,6 +24,13 @@ spec:
         - name: gcs-credentials
           mountPath: "/app/strapi-385510-04a56795d885.json"
           subPath: "credentials.json"
+        resources:
+          requests:
+            cpu: "250m"  # Request 250 millicores of CPU
+            memory: "512Mi"  # Request 512 MiB of memory
+          limits:
+            cpu: "500m"  # Limit to 500 millicores of CPU
+            memory: "1Gi"  # Limit to 1 GiB of memory
       volumes:
       - name: gcs-credentials
         secret:

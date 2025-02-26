@@ -3,6 +3,17 @@ import os
 # Flask configuration
 SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key')
 
+MAIL_SERVER = 'smtp.gmail.com'
+MAIL_PORT = 587
+MAIL_USE_TLS = True
+MAIL_USE_SSL = False
+MAIL_USERNAME = 'fsiddiqui107@gmail.com'
+MAIL_PASSWORD = 'fqkfsdxzcasryjpz'  # App password or your Gmail password
+MAIL_DEFAULT_SENDER = 'fsiddiqui107@gmail.com'
+
+# Admin email for out-of-stock notifications
+ADMIN_EMAIL = 'fsiddiqui107@gmail.com'
+
 # Database configuration (Google Cloud SQL)
 # CLOUD_SQL_USERNAME = os.getenv('CLOUD_SQL_USERNAME', 'clouddb')
 # CLOUD_SQL_PASSWORD = os.getenv('CLOUD_SQL_PASSWORD', 'clouddb')

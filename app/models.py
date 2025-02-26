@@ -29,6 +29,17 @@ class Order(db.Model):
     payment_method = db.Column(db.String(50), nullable=False)  # Payment method: 'PayOnline' or 'CashOnDelivery'
     date_added = db.Column(db.DateTime, default=datetime.utcnow)  # New date added field
 
+    # User details
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), nullable=False)
+    address = db.Column(db.String(255), nullable=False)
+    city = db.Column(db.String(100), nullable=False)
+    country = db.Column(db.String(100), nullable=False)
+    pincode = db.Column(db.String(20), nullable=False)
+    phone = db.Column(db.String(20), nullable=False)
+    address_type = db.Column(db.String(50), nullable=False)  # e.g., Home, Office
+
     # Many-to-many relationship with Product
     products = db.relationship('Product', secondary=order_product, backref='orders')
 
